@@ -34,6 +34,8 @@ textures = {
 }
 
 hand = pygame.image.load('./sprites/hand.png')
+hand2 = pygame.image.load('./sprites/pickaxe.png')
+hand3 = pygame.image.load('./sprites/sword.png')
 
 enemies = [
   {
@@ -205,7 +207,7 @@ def show_fps(clock,screen):
     screen.blit(fps, (150,5))
 
 def game(r):
-
+  h = 0
   gameOver = True
   while gameOver:
     r.clear()
@@ -243,6 +245,18 @@ def game(r):
                     r.player["x"] -= int(d * cos(r.player["a"]))
                     r.player["y"] -= int(d * sin(r.player["a"]))
                 
+                elif e.key == pygame.K_x:
+                  hitSound.play()
+
+                elif e.key == pygame.K_q:
+                  h = (h+1) % 3
+                  print(h)
+                  if(h == 1):
+                    hand = hand2
+                  elif(h == 2):
+                    hand = hand3
+
+                
                 if e.key == pygame.K_f:
                     if screen.get_flags() and pygame.FULLSCREEN:
                         pygame.display.set_mode((screenSize, screenSize))
@@ -259,11 +273,27 @@ def game(r):
         pass
 
 pygame.init()
+pygame.mixer.init()
 
-pygame.mixer.music.load("sweden.mp3") 
+hitSound = pygame.mixer.Sound('./music/hit.mp3')
+pygame.mixer.music.load("./music/sweden.mp3") 
 pygame.mixer.music.play(-1,0.0)
 pygame.mixer.music.set_volume(0.3)
 
+#============ introduction ================
+screen = pygame.display.set_mode((600,600))
+intro = pygame.image.load("./sprites/intro.png").convert()
+screen.blit(intro,(0,0))
+pygame.display.flip()
+
+introFlag = True
+while (introFlag):
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN) or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+        introFlag = False
+        pygame.display.quit()
+
+#============= game =======================
 screen = pygame.display.set_mode((screenSize, screenSize),pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.HWACCEL)
 screen.set_alpha(None)
 r = Raycaster(screen)
