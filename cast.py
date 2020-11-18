@@ -2,36 +2,39 @@ import os
 import pygame
 from math import pi, cos, sin, atan2
 
-#Variables del personaje y el mundo
-screenSize = 200
+#Most used values
+screenSize = 300
 zoom = 70
 initialX = 20
 initialY = 20
 blockSize = 50
 fov = pi/3
 a = 0
-back = 0.1
 spriteSize = 256
 characterSize = 32
 characterRes = 102
+
+#for fps display
 CLOCK    = pygame.time.Clock()
-FPS      = 60000
+
+#colors
 WHITE = (255, 255, 255)
-#Cargas de imagenes de texturas
+BLACK = (0, 0, 0)
+
 wall1 = pygame.image.load('./sprites/wall1.png')
 wall2 = pygame.image.load('./sprites/wall2.png')
+wall3 = pygame.image.load('./sprites/wall3.png')
+wall4 = pygame.image.load('./sprites/wall4.png')
 
-
-#Asignacion de imagenes en un diccionario
 textures = {
   "1": wall1,
-  "2": wall2
+  "2": wall2,
+  "3": wall3,
+  "4": wall4,
 }
 
-#Carga de imagenes de la mano
 hand = pygame.image.load('./sprites/hand.png')
 
-#Carga de imagenes de sprites en sus posiciones en un arreglo de diccionarios (10 ladies)
 enemies = [
   {
     "x": 100,
@@ -60,8 +63,6 @@ enemies = [
   }
 ]
   
-
-
 class Raycaster(object):
   def __init__(self, screen):
     _, _, self.width, self.height = screen.get_rect()
@@ -74,16 +75,24 @@ class Raycaster(object):
       "fov": fov
     }
     self.map = []
-    self.zbuffer = [-float('inf') for _ in range(0,200)]
+    self.zbuffer = [-float('inf') for _ in range(0,screenSize)]
 
 
   def clear(self):
-    self.screen.fill((back,back,back))
+    self.screen.fill((47,111,135))
 
 
   def point(self, x, y, c = None):
     screen.set_at((x, y), c)
 
+  #function for minimap rendering, uses the wall texture
+  def draw_rectangle(self, x, y, texture):
+    for cx in range(x, x + 10):
+      for cy in range(y, y + 10):
+        tx = int((cx - x)*600 / 50)
+        ty = int((cy - y)*600 / 50)
+        c = texture.get_at((tx, ty))
+        self.point(cx, cy, c)
 
   def load_map(self, filename):
     with open(filename) as f:
@@ -111,6 +120,8 @@ class Raycaster(object):
 
         tx = int(maxhit * spriteSize/blockSize)
         return d, self.map[j][i], tx
+
+      #self.point(int(x), int(y), (255, 255, 255))
 
       d += 1
 
@@ -147,7 +158,6 @@ class Raycaster(object):
             self.point(x, y, c)
             self.zbuffer[x] = sprite_d
 
-
   def draw_player(self, xi, yi, w = characterRes, h = characterRes):
     for x in range(xi, xi + w):
       for y in range(yi, yi + h):
@@ -158,6 +168,19 @@ class Raycaster(object):
           self.point(x, y, c)
 
   def render(self):
+    #Minimap rendering
+    for x in range(0, 100, 10):
+      for y in range(0, 100, 10):
+        i = int(x / 10)
+        j = int(y / 10)
+        if self.map[j][i] != ' ':
+          y = 200 + y
+          z = 300 + x
+          self.draw_rectangle(z, y, textures[self.map[j][i]])
+
+    self.point(int(self.player["x"] * 0.21) + 300, int(self.player["y"] * 0.21) + 200, WHITE)
+
+    #game
     for i in range(0, screenSize):
       a =  self.player["a"] - self.player["fov"]/2 + self.player["fov"]*i/screenSize
       d, c, tx = self.cast_ray(a)
@@ -167,34 +190,32 @@ class Raycaster(object):
 
       self.zbuffer[i] = d
 
-    #enemigos
+    #enemy rendering
     for enemy in enemies:
       self.point(enemy["x"], enemy["y"], (0, 0, 0))
       self.draw_sprite(enemy)
 
-    #jugador
+    #hand rendering
     self.draw_player(screenSize - characterRes - 50, screenSize - characterRes)
 
 def show_fps(clock,screen):
-    show_fps = "FPS: " + str(int(clock.get_fps()))
+    string = "FPS: " + str(int(clock.get_fps()))
     font = pygame.font.SysFont('Arial', 10, True)
-    render = font.render(show_fps,0,(255,255,255))
-    screen.blit(render, (150,5))
+    fps = font.render(string,0,(255,255,255))
+    screen.blit(fps, (150,5))
 
 def game(r):
 
   gameOver = True
   while gameOver:
     r.clear()
-
+    d = 7
     try:
 
         for e in pygame.event.get():
             if e.type == pygame.QUIT or (e.type == pygame.KEYDOWN and e.key == pygame.K_ESCAPE):
                 gameOver = False
 
-            
-            #Rotacion
             if e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_a:
                     r.player["a"] -= pi/10
@@ -210,36 +231,17 @@ def game(r):
                     else:
                         pass
 
-                #Direccion
-                elif e.key == pygame.K_RIGHT:
-                    r.player["y"] += 10*cos(r.player["a"])
-                    r.player["x"] += -1*10*sin(r.player["a"])
-                    if r.player["y"] <= 65 or r.player["y"] >= 630 or r.player["x"] <= 65 or r.player["x"] >= 1430:
-                        r.player["y"] -= 10*cos(r.player["a"])
-                        r.player["x"] -= -1*10*sin(r.player["a"])
-                    
                 elif e.key == pygame.K_LEFT:
-                    r.player["y"] += -1*10*cos(r.player["a"])
-                    r.player["x"] += 1*10*sin(r.player["a"])
-                    if r.player["y"] <= 65 or r.player["y"] >= 630 or r.player["x"] <= 65 or r.player["x"] >= 1430:
-                        r.player["y"] -= -1*10*cos(r.player["a"])
-                        r.player["x"] -= 1*10*sin(r.player["a"])
+                    r.player["a"] -= pi/20
+                elif e.key == pygame.K_RIGHT:
+                    r.player["a"] += pi/20
 
                 elif e.key == pygame.K_UP:
-                    r.player["x"] += 10*cos(r.player["a"])
-                    r.player["y"] += 10*sin(r.player["a"])
-                    if r.player["y"] <= 65 or r.player["y"] >= 630 or r.player["x"] <= 65 or r.player["x"] >= 1430:
-                        r.player["x"] -= 10*cos(r.player["a"])
-                        r.player["y"] -= 10*sin(r.player["a"])
-                
-
+                    r.player["x"] += int(d * cos(r.player["a"]))
+                    r.player["y"] += int(d * sin(r.player["a"]))
                 elif e.key == pygame.K_DOWN:
-                    r.player["x"] += -1*10*cos(r.player["a"])
-                    r.player["y"] += -1*10*sin(r.player["a"])
-                    if r.player["y"] <= 65 or r.player["y"] >= 630 or r.player["x"] <= 65 or r.player["x"] >= 1430:
-                        r.player["x"] -= -1*10*cos(r.player["a"])
-                        r.player["y"] -= -1*10*sin(r.player["a"])
-                            
+                    r.player["x"] -= int(d * cos(r.player["a"]))
+                    r.player["y"] -= int(d * sin(r.player["a"]))
                 
                 if e.key == pygame.K_f:
                     if screen.get_flags() and pygame.FULLSCREEN:
@@ -249,21 +251,23 @@ def game(r):
 
       
         r.render()    
-        show_fps(clock,screen)       
+        show_fps(CLOCK,screen)       
         pygame.display.flip()
-        clock.tick(15) 
+        CLOCK.tick(60) 
         
     except ZeroDivisionError:
         pass
 
 pygame.init()
 
+pygame.mixer.music.load("sweden.mp3") 
+pygame.mixer.music.play(-1,0.0)
+pygame.mixer.music.set_volume(0.3)
 
 screen = pygame.display.set_mode((screenSize, screenSize),pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.HWACCEL)
 screen.set_alpha(None)
 r = Raycaster(screen)
 r.load_map('./map.txt')
-clock = pygame.time.Clock()
 game(r)
 
 
