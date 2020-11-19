@@ -25,17 +25,15 @@ wall1 = pygame.image.load('./sprites/wall1.png')
 wall2 = pygame.image.load('./sprites/wall2.png')
 wall3 = pygame.image.load('./sprites/wall3.png')
 wall4 = pygame.image.load('./sprites/wall4.png')
+wall5 = pygame.image.load('./sprites/wall5.png')
 
 textures = {
   "1": wall1,
   "2": wall2,
   "3": wall3,
   "4": wall4,
+  "5": wall5,
 }
-
-hand = pygame.image.load('./sprites/hand.png')
-hand2 = pygame.image.load('./sprites/pickaxe.png')
-hand3 = pygame.image.load('./sprites/sword.png')
 
 enemies = [
   {
@@ -64,6 +62,10 @@ enemies = [
     "texture": pygame.image.load('./sprites/gem5.png')
   }
 ]
+
+hand = pygame.image.load('./sprites/pickaxe.png')
+hand1 = pygame.image.load('./sprites/hand.png')
+hand2 = pygame.image.load('./sprites/sword.png')
   
 class Raycaster(object):
   def __init__(self, screen):
@@ -169,6 +171,7 @@ class Raycaster(object):
         if c != (152, 0, 136, 255):
           self.point(x, y, c)
 
+
   def render(self):
     #Minimap rendering
     for x in range(0, 100, 10):
@@ -179,7 +182,7 @@ class Raycaster(object):
           y = 200 + y
           z = 300 + x
           self.draw_rectangle(z, y, textures[self.map[j][i]])
-
+    #player inside map
     self.point(int(self.player["x"] * 0.21) + 300, int(self.player["y"] * 0.21) + 200, WHITE)
 
     #game
@@ -207,7 +210,7 @@ def show_fps(clock,screen):
     screen.blit(fps, (150,5))
 
 def game(r):
-  h = 0
+  spriteControl = 0
   gameOver = True
   while gameOver:
     r.clear()
@@ -248,13 +251,12 @@ def game(r):
                 elif e.key == pygame.K_x:
                   hitSound.play()
 
-                elif e.key == pygame.K_q:
-                  h = (h+1) % 3
-                  print(h)
-                  if(h == 1):
+                elif e.key == pygame.K_c:
+                  spriteControl = (spriteControl+1) % 3
+                  if spriteControl == 1:
+                    hand = hand1
+                  elif spriteControl == 2:
                     hand = hand2
-                  elif(h == 2):
-                    hand = hand3
 
                 
                 if e.key == pygame.K_f:
@@ -263,6 +265,9 @@ def game(r):
                     else:
                         pygame.display.set_mode((screenSize, screenSize),  pygame.DOUBLEBUF|pygame.HWACCEL|pygame.FULLSCREEN|pygame.HWSURFACE)
 
+        if(200<r.player["x"]<300 and 375<r.player["y"]<500):
+            portal.play()
+            break
       
         r.render()    
         show_fps(CLOCK,screen)       
@@ -276,6 +281,7 @@ pygame.init()
 pygame.mixer.init()
 
 hitSound = pygame.mixer.Sound('./music/hit.mp3')
+portal = pygame.mixer.Sound('./music/portal.mp3')
 pygame.mixer.music.load("./music/sweden.mp3") 
 pygame.mixer.music.play(-1,0.0)
 pygame.mixer.music.set_volume(0.3)
@@ -299,6 +305,19 @@ screen.set_alpha(None)
 r = Raycaster(screen)
 r.load_map('./map.txt')
 game(r)
+
+#============ end ================
+screen = pygame.display.set_mode((600,600))
+end = pygame.image.load("./sprites/exit.png").convert()
+screen.blit(end,(0,0))
+pygame.display.flip()
+
+endFlag = True
+while (endFlag):
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN) or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+        endFlag = False
+        pygame.display.quit()
 
 
 
